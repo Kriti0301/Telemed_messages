@@ -32,7 +32,7 @@ No external MongoDB or Docker installation required (Flapdoodle embedded DB runs
 
 From the project root, run:
 
-mvn clean spring-boot:run
+`mvn clean spring-boot:run`
 
 
 After startup:
@@ -158,11 +158,11 @@ Response
 Fetches all messages in a specific consultation.
 Supports optional query parameter: role=PATIENT or role=DOCTOR.
 
-# All messages
+### All messages
 
 **Endpoint:** `GET /consultations/CONS-1/messages`
 
-# Only doctor messages
+### Only doctor messages
 
 **Endpoint:** `GET /consultations/CONS-1/messages?role=DOCTOR`
 
