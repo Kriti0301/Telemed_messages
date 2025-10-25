@@ -6,7 +6,7 @@ import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.Instant;
-import java.time.OffsetDateTime;
+
 
 @Document(collection = "messages")
 @CompoundIndex(name = "consult_ts", def = "{'consultationId': 1, 'sentAt': 1}")

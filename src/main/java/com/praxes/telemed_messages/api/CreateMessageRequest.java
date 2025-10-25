@@ -6,7 +6,6 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 import java.time.Instant;
-import java.time.OffsetDateTime;
 
 public class CreateMessageRequest {
     @NotBlank
