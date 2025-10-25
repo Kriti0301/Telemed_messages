@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Telemed Consult Messages</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 30px; }
+        h2 { color: #222; }
+        #messages {
+          border: 1px solid #ccc; padding: 10px; height: 300px;
+          overflow-y: auto; margin-top: 10px; background: #fafafa;
+        }
+        .msg { margin-bottom: 10px; line-height: 1.4; }
+        .patient { color: #0056cc; font-weight: 600; }
+        .doctor { color: #0a880a; font-weight: 600; }
+        .meta { font-size: 0.85em; color: #666; margin-left: 4px; }
+        #controls { margin-top: 12px; }
+        select, input, button { margin-right: 6px; padding: 5px; font-size: 14px; }
+        input[type="text"] { width: 200px; }
+        #content { width: 260px; }
+        .muted { color:#777; font-size: 0.95em; }
+    </style>
+</head>
+<body>
+
+<h2>Telemed Consult Messages</h2>
+
+<label>Consultation:
+    <select id="consultationSelect"></select>
+</label>
+<button id="loadBtn">Load</button>
+
+<label style="margin-left:12px;">Show:
+    <select id="roleFilter">
+        <option value="ALL" selected>All</option>
+        <option value="PATIENT">Patient</option>
+        <option value="DOCTOR">Doctor</option>
+    </select>
+</label>
+
+<div id="messages"><span class="muted">Select a consultation and click “Load”.</span></div>
+
+<div id="controls">
+    <select id="role">
+        <option value="PATIENT">Patient</option>
+        <option value="DOCTOR">Doctor</option>
+    </select>
+    <input id="authorId" type="text" placeholder="Author ID" />
+    <input id="content" type="text" placeholder="Type a message..." />
+    <button id="sendBtn">Send</button>
+</div>
+
+<script>
+    const api = "http://localhost:8080";
+    const consultSelect = document.getElementById("consultationSelect");
+    const roleFilter = document.getElementById("roleFilter");
+    const messagesEl = document.getElementById("messages");
+    const loadBtn = document.getElementById("loadBtn");
+    const sendBtn = document.getElementById("sendBtn");
+
+    let hasLoaded = false; // only reload on filter change after first manual load
+
+    async function fetchConsultations() {
+      try {
+        const res = await fetch(api + "/consultations");
+        const data = await res.json();
+        consultSelect.innerHTML = data.map(c => `<option value="${c.id}">${c.id}</option>`).join("");
+        // do NOT auto-load messages here
+      } catch (err) {
+        console.error("Error loading consultations:", err);
+        consultSelect.innerHTML = "";
+      }
+    }
+
+    async function loadMessages() {
+      const id = consultSelect.value;
+      if (!id) {
+        messagesEl.innerHTML = `<span class="muted">Pick a consultation first.</span>`;
+        return;
+      }
+
+      const role = roleFilter.value;
+      const url = role === "ALL"
+        ? `${api}/consultations/${id}/messages`
+        : `${api}/consultations/${id}/messages?role=${role}`;
+
+      try {
+        const res = await fetch(url);
+        if (!res.ok) {
+          messagesEl.innerHTML = `<p style="color:red;">Error: ${res.status}</p>`;
+          return;
+        }
+        const data = await res.json();
+        if (!Array.isArray(data) || data.length === 0) {
+          messagesEl.innerHTML = `<span class="muted">No messages yet.</span>`;
+          return;
+        }
+        messagesEl.innerHTML = data.map(m => `
+          <div class="msg ${m.authorRole.toLowerCase()}">
+            <div><strong>${m.authorRole}:</strong> ${m.content}</div>
+            <div class="meta">${m.sentAt}</div>
+          </div>
+        `).join("");
+        messagesEl.scrollTop = messagesEl.scrollHeight;
+      } catch (err) {
+        console.error("Error loading messages:", err);
+        messagesEl.innerHTML = `<p style="color:red;">Failed to load messages.</p>`;
+      }
+    }
+
+    async function sendMessage(e) {
+      e.preventDefault();
+      const id = consultSelect.value;
+      if (!id) {
+        alert("Select a consultation first.");
+        return;
+      }
+      const body = {
+        authorId: document.getElementById("authorId").value.trim(),
+        authorRole: document.getElementById("role").value,
+        content: document.getElementById("content").value.trim(),
+        sentAt: new Date().toISOString()
+      };
+
+      if (!body.content) {
+        alert("Message cannot be empty.");
+        return;
+      }
+
+      try {
+        const res = await fetch(`${api}/consultations/${id}/messages`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body)
+        });
+        if (!res.ok) {
+          alert("Failed to send message (status " + res.status + ")");
+          return;
+        }
+        document.getElementById("content").value = "";
+        hasLoaded = true;      // now a thread exists
+        await loadMessages();  // refresh chat after send (manual trigger effect)
+      } catch (err) {
+        console.error("Error sending message:", err);
+        alert("Failed to send message.");
+      }
+    }
+
+    // --- wiring ---
+
+    // clicking Load is the ONLY way to fetch messages initially
+    loadBtn.addEventListener("click", async () => {
+      await loadMessages();
+      hasLoaded = true;
+    });
+
+    // changing consultation just clears the thread and resets filter
+    consultSelect.addEventListener("change", () => {
+      roleFilter.value = "ALL";
+      messagesEl.innerHTML = `<span class="muted">Click “Load” to view messages.</span>`;
+      hasLoaded = false;
+    });
+
+    // only reload on filter change if user already clicked Load at least once
+    roleFilter.addEventListener("change", async () => {
+      if (hasLoaded) {
+        await loadMessages();
+      }
+    });
+
+    sendBtn.addEventListener("click", sendMessage);
+
+    // initial: only fetch the consult list; no messages
+    document.addEventListener("DOMContentLoaded", fetchConsultations);
+</script>
+
+</body>
+</html>
