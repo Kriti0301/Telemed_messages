@@ -18,8 +18,6 @@ Vanilla HTML + JavaScript — simple frontend for testing and interaction
 
 The project demonstrates RESTful design, clear data modeling, and a scalable architecture that could easily evolve into a production-grade healthcare communication system.
 
-______
-
 # **Setup Instructions**
 
 ## **1) Prerequisites**
@@ -51,7 +49,7 @@ If you want to manually seed or reset the data, use the following curl commands.
 
 ### ➤ **Seed Consultations**
 #### Consultation 1
-POST /consultations
+**Endpoint:** `POST /consultations`
 
 ```json
 {
@@ -63,7 +61,7 @@ POST /consultations
 ```
 
 #### Consultation 2
-POST /consultations
+**Endpoint:** `POST /consultations`
 ```json
 {
 "id": "CONS-2",
@@ -76,7 +74,7 @@ POST /consultations
 
 ### ➤ **Seed Messages**
 #### Message in Consultation 1
-POST /consultations/CONS-1/messages
+**Endpoint:** `POST /consultations/CONS-1/messages`
 ```json
 {
 "authorId": "P123",
@@ -86,7 +84,7 @@ POST /consultations/CONS-1/messages
 }
 ```
 #### Message in Consultation 2
-POST /consultations/CONS-2/messages
+**Endpoint:** `POST /consultations/CONS-2/messages`
 ```json
 {
 "authorId": "D012",
@@ -102,7 +100,7 @@ Each REST endpoint is fully described with example curl requests and responses.
 
 ## **1. Create a Consultation**
 
-POST /consultations
+**Endpoint:** `POST /consultations`
 
 Creates a new consultation record between a doctor and a patient.
 
@@ -130,7 +128,7 @@ Response
 
 ## **2) Get All Consultations**
 
-GET /consultations
+**Endpoint:** `GET /consultations`
 
 Returns all consultations.
 
@@ -155,18 +153,18 @@ Response
 
 ## **3) Get Messages for a Consultation**
 
-GET /consultations/{consultationId}/messages
+**Endpoint:** `GET /consultations/{consultationId}/messages`
 
 Fetches all messages in a specific consultation.
 Supports optional query parameter: role=PATIENT or role=DOCTOR.
 
 # All messages
 
-GET /consultations/CONS-1/messages
+**Endpoint:** `GET /consultations/CONS-1/messages`
 
 # Only doctor messages
 
-GET /consultations/CONS-1/messages?role=DOCTOR
+**Endpoint:** `GET /consultations/CONS-1/messages?role=DOCTOR`
 
 Response
 ```json
@@ -190,7 +188,7 @@ Response
 
 ## **4) Send a Message**
 
-POST /consultations/{consultationId}/messages
+**Endpoint:** `POST /consultations/{consultationId}/messages`
 
 Adds a new message to a consultation.
 
@@ -282,21 +280,25 @@ sentAt → for sorting messages chronologically
 
 ## **Technology Stack**
 
-Layer	Technology	Purpose
-Backend	Spring Boot 3	REST API framework
-Database	MongoDB Embedded (Flapdoodle)	Local, in-memory persistence
-Frontend	HTML + JavaScript	Basic UI for testing
-Data Seeder	CommandLineRunner	Loads demo consultations and messages automatically
+| Layer      | Technology                    | Purpose                                                  |
+|-------------|-------------------------------|----------------------------------------------------------|
+| Backend     | Spring Boot 3                 | REST API framework                                       |
+| Database    | MongoDB Embedded (Flapdoodle) | Local, in-memory persistence                             |
+| Frontend    | HTML + JavaScript             | Basic UI for sending and viewing messages                |
+| Data Seeder | CommandLineRunner             | Loads demo consultations and messages automatically      |
+
 
 ## **Making This Production-Ready**
 
-Category	Improvement	Benefit
-Security	Add JWT authentication, HTTPS, and validation	Protects sensitive patient data
-Performance	Add pagination for messages	Handles large chat histories
-Reliability	Use external MongoDB replica set	Prevents data loss on restart
-Scalability	Dockerize + load balance API	Supports many concurrent sessions
-Data Integrity	Add schema validation and error logging	Ensures consistent records
-Compliance	Implement HIPAA/PIPEDA encryption	Meets healthcare data privacy laws
+| Category     | Improvement                                      | Benefit                                     |
+|---------------|--------------------------------------------------|---------------------------------------------|
+| Security      | Add JWT authentication, HTTPS, and validation    | Protects sensitive patient data             |
+| Performance   | Add pagination for messages                      | Handles large chat histories                |
+| Reliability   | Use external MongoDB replica set                 | Prevents data loss on restart               |
+| Scalability   | Dockerize + load balance API                     | Supports many concurrent sessions           |
+| Data Integrity| Add schema validation and error logging          | Ensures consistent records                  |
+| Compliance    | Implement HIPAA/PIPEDA encryption                | Meets healthcare data privacy laws          |
+
 
 ## **UI Usage**
 
@@ -310,6 +312,7 @@ Messages appear instantly without reloading the page.
 
 ## **Project Structure**
 
+```text
 telemed-messages/
 │
 ├── src/main/java/com/praxes/telemed_messages/
@@ -324,7 +327,7 @@ telemed-messages/
 │   └── static/index.html
 │
 └── pom.xml
-
+```
 **Summary**
 
 This project fulfills all technical and documentation criteria:
