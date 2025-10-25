@@ -1,0 +1,14 @@
+spring:
+  data:
+    mongodb:
+      database: telemed
+      auto-index-creation: true
+      embedded:
+        version: 4.0.21
+
+  sql:
+    init:
+      mode: never
+
+server:
+  port: 8080
