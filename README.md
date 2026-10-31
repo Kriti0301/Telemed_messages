@@ -1,338 +1,180 @@
-# **Telemed Consultation Messaging System**
+# Telemed Consultation Messaging API
 
-Author: Kriti Jodhani
-Date: October 2025
-Purpose: Praxes Developer Technical Assessment
+A REST API for text messaging between patients and doctors inside telemedicine consultations, built with **Spring Boot** and **MongoDB**. A small web page is included for trying it out.
 
-# **Overview**
+Built by Kriti Jodhani (October 2025) as a developer technical assessment.
 
-This project implements a lightweight telemedicine consultation messaging system that enables patients and doctors to exchange text messages securely within consultation sessions.
+---
 
-It is built using:
+## Features
 
-Spring Boot 3 (Java 23) — REST API backend
+- Create and list consultations (one patient and one doctor per consultation)
+- Send messages in a consultation, and list them in chronological order
+- Filter messages by author role (`?role=PATIENT` or `?role=DOCTOR`)
+- Input validation: required fields, and a 2,000-character limit on messages
+- Clear errors: `404` for an unknown consultation, `409` for a duplicate consultation ID, and `400` with field details for invalid JSON or missing fields
+- MongoDB indexes for fast lookups by consultation, role and time
+- Embedded MongoDB, so no database install is needed, and demo data is loaded at startup
 
-MongoDB (Flapdoodle embedded) — lightweight, in-memory persistence
+---
 
-Vanilla HTML + JavaScript — simple frontend for testing and interaction
+## Tech stack
 
-The project demonstrates RESTful design, clear data modeling, and a scalable architecture that could easily evolve into a production-grade healthcare communication system.
+| Layer | Technology |
+|---|---|
+| Language | Java 21 |
+| Framework | Spring Boot 3.5 (Web, Validation, Data MongoDB) |
+| Database | MongoDB, embedded at runtime with Flapdoodle |
+| Frontend | Plain HTML + JavaScript (`src/main/resources/static/index.html`) |
+| Build | Maven (wrapper included) |
 
-# **Setup Instructions**
+---
 
-## **1) Prerequisites**
+## Getting started
 
-Java 17+ (tested with JDK 23)
+### Prerequisites
 
-Maven 3.9+
+- **Java 21** or newer
+- No MongoDB or Docker is needed. An embedded MongoDB is downloaded and started automatically on first run.
 
-No external MongoDB or Docker installation required (Flapdoodle embedded DB runs automatically).
+### Run
 
-## **2) Run the Application**
-
-From the project root, run:
-
-`mvn clean spring-boot:run`
-
-
-After startup:
-
-Backend API: http://localhost:8080
-
-Frontend: open src/main/resources/static/index.html in a web browser
-
-## **3) Seed Data**
-
-The database is automatically populated by the MongoDataSeeder class at startup.
-
-If you want to manually seed or reset the data, use the following curl commands.
-
-### ➤ **Seed Consultations**
-#### Consultation 1
-**Endpoint:** `POST /consultations`
-
-```json
-{
-"id": "CONS-1",
-"patientId": "P123",
-"doctorId": "D456",
-"startedAt": "2025-10-22T14:00:00Z"
-}
+```bash
+./mvnw spring-boot:run        # macOS / Linux
+mvnw.cmd spring-boot:run      # Windows
 ```
 
-#### Consultation 2
-**Endpoint:** `POST /consultations`
-```json
-{
-"id": "CONS-2",
-"patientId": "P789",
-"doctorId": "D012",
-"startedAt": "2025-10-22T15:00:00Z"
-}
+- API: `http://localhost:8080`
+- Web UI: open **`http://localhost:8080/`** in a browser. Spring serves it, so it can call the API without CORS problems.
+
+On startup, `MongoDataSeeder` inserts **2 consultations** (`CONS-1`, `CONS-2`) and **14 demo messages**.
+
+### Using the web UI
+
+1. Choose a consultation from the dropdown and click **Load**.
+2. Optionally filter by role.
+3. Type a message and click **Send**. It appears without reloading the page.
+
+---
+
+## API
+
+### `POST /consultations`: create a consultation
+
+```bash
+curl -X POST http://localhost:8080/consultations \
+  -H "Content-Type: application/json" \
+  -d '{"id":"CONS-3","patientId":"P900","doctorId":"D111","startedAt":"2025-10-23T11:00:00Z"}'
 ```
 
-
-### ➤ **Seed Messages**
-#### Message in Consultation 1
-**Endpoint:** `POST /consultations/CONS-1/messages`
-```json
-{
-"authorId": "P123",
-"authorRole": "PATIENT",
-"content": "Hi Doctor, I have a headache since yesterday.",
-"sentAt": "2025-10-22T14:02:00Z"
-}
-```
-#### Message in Consultation 2
-**Endpoint:** `POST /consultations/CONS-2/messages`
-```json
-{
-"authorId": "D012",
-"authorRole": "DOCTOR",
-"content": "Can you describe your side effects in detail?",
-"sentAt": "2025-10-22T15:05:00Z"
-}
-```
-
-# **API Documentation**
-
-Each REST endpoint is fully described with example curl requests and responses.
-
-## **1. Create a Consultation**
-
-**Endpoint:** `POST /consultations`
-
-Creates a new consultation record between a doctor and a patient.
-
-Request
+Response `201 Created`:
 
 ```json
-{
-"id": "CONS-3",
-"patientId": "P900",
-"doctorId": "D111",
-"startedAt": "2025-10-23T11:00:00Z"
-}
+{ "id": "CONS-3", "patientId": "P900", "doctorId": "D111", "startedAt": "2025-10-23T11:00:00Z" }
 ```
 
-Response
+If `startedAt` is omitted, it defaults to the current time. If the `id` already exists, the response is `409 Conflict`.
 
-```json
-{
-"id": "CONS-3",
-"patientId": "P900",
-"doctorId": "D111",
-"startedAt": "2025-10-23T11:00:00Z"
-}
+### `GET /consultations`: list consultations
+
+```bash
+curl http://localhost:8080/consultations
 ```
-
-## **2) Get All Consultations**
-
-**Endpoint:** `GET /consultations`
-
-Returns all consultations.
-
-Response
 
 ```json
 [
-{
-"id": "CONS-1",
-"patientId": "P123",
-"doctorId": "D456",
-"startedAt": "2025-10-22T14:00:00Z"
-},
-{
-"id": "CONS-2",
-"patientId": "P789",
-"doctorId": "D012",
-"startedAt": "2025-10-22T15:00:00Z"
-}
+  { "id": "CONS-1", "patientId": "P123", "doctorId": "D456", "startedAt": "2025-10-22T14:00:00Z" },
+  { "id": "CONS-2", "patientId": "P789", "doctorId": "D012", "startedAt": "2025-10-22T15:00:00Z" }
 ]
 ```
 
-## **3) Get Messages for a Consultation**
+### `POST /consultations/{consultationId}/messages`: send a message
 
-**Endpoint:** `GET /consultations/{consultationId}/messages`
-
-Fetches all messages in a specific consultation.
-Supports optional query parameter: role=PATIENT or role=DOCTOR.
-
-### All messages
-
-**Endpoint:** `GET /consultations/CONS-1/messages`
-
-### Only doctor messages
-
-**Endpoint:** `GET /consultations/CONS-1/messages?role=DOCTOR`
-
-Response
-```json
-[
-{
-"consultationId": "CONS-1",
-"authorId": "P123",
-"authorRole": "PATIENT",
-"content": "Hi Doctor, I have a headache since yesterday.",
-"sentAt": "2025-10-22T14:02:00Z"
-},
-{
-"consultationId": "CONS-1",
-"authorId": "D456",
-"authorRole": "DOCTOR",
-"content": "Can you rate the pain 1–10?",
-"sentAt": "2025-10-22T14:04:00Z"
-}
-]
+```bash
+curl -X POST http://localhost:8080/consultations/CONS-2/messages \
+  -H "Content-Type: application/json" \
+  -d '{"authorId":"P789","authorRole":"PATIENT","content":"I feel sleepy after taking medication.","sentAt":"2025-10-22T15:06:00Z"}'
 ```
 
-## **4) Send a Message**
+Response `201 Created` returns the saved message. If the consultation doesn't exist, the response is `404 Not Found`.
 
-**Endpoint:** `POST /consultations/{consultationId}/messages`
+### `GET /consultations/{consultationId}/messages`: list messages
 
-Adds a new message to a consultation.
-
-Request
-```json
-{
-"authorId": "P789",
-"authorRole": "PATIENT",
-"content": "I feel sleepy after taking medication.",
-"sentAt": "2025-10-22T15:06:00Z"
-}
+```bash
+curl http://localhost:8080/consultations/CONS-1/messages
+curl "http://localhost:8080/consultations/CONS-1/messages?role=DOCTOR"
 ```
 
-Response
-```json
-{
-"consultationId": "CONS-2",
-"authorId": "P789",
-"authorRole": "PATIENT",
-"content": "I feel sleepy after taking medication.",
-"sentAt": "2025-10-22T15:06:00Z"
-}
-```
-**Sample Data**
-Consultations Collection
+Messages come back sorted by `sentAt`, oldest first:
 
 ```json
 [
-{
-"_id": "CONS-1",
-"patientId": "P123",
-"doctorId": "D456",
-"startedAt": "2025-10-22T14:00:00Z"
-},
-{
-"_id": "CONS-2",
-"patientId": "P789",
-"doctorId": "D012",
-"startedAt": "2025-10-22T15:00:00Z"
-}
+  { "consultationId": "CONS-1", "authorId": "P123", "authorRole": "PATIENT",
+    "content": "Hi Doctor, I have a headache since yesterday.", "sentAt": "2025-10-22T14:02:00Z" },
+  { "consultationId": "CONS-1", "authorId": "D456", "authorRole": "DOCTOR",
+    "content": "Can you rate the pain 1–10?", "sentAt": "2025-10-22T14:04:00Z" }
 ]
 ```
 
-Messages Collection
+### Validation errors
+
+A missing or invalid field returns `400 Bad Request` (handled by `GlobalExceptionHandler`):
+
 ```json
-[
-{
-"_id": "msg1",
-"consultationId": "CONS-1",
-"authorId": "P123",
-"authorRole": "PATIENT",
-"content": "Hi Doctor, I have a headache since yesterday.",
-"sentAt": "2025-10-22T14:02:00Z"
-},
-{
-"_id": "msg2",
-"consultationId": "CONS-1",
-"authorId": "D456",
-"authorRole": "DOCTOR",
-"content": "Can you rate the pain 1–10?",
-"sentAt": "2025-10-22T14:04:00Z"
-},
-{
-"_id": "msg3",
-"consultationId": "CONS-2",
-"authorId": "P789",
-"authorRole": "PATIENT",
-"content": "Hello, I started a new med and feel drowsy.",
-"sentAt": "2025-10-22T15:03:00Z"
-}
-]
+{ "error": "ValidationError", "details": [ { "field": "content", "message": "must not be blank" } ] }
 ```
-# **Architecture Decisions**
 
-## **Data Model**
+---
 
-Entity	Fields	Description
-Consultation	id, patientId, doctorId, startedAt	Represents a session between one patient and one doctor
-Message	consultationId, authorId, authorRole, content, sentAt	Represents a message exchanged in a consultation
+## Design decisions
 
-Relationship:
-One Consultation → Many Messages
+**Data model.** One consultation has many messages.
 
-Indexes (recommended for production):
+| Collection | Fields |
+|---|---|
+| `consultations` | `id`, `patientId`, `doctorId`, `startedAt` |
+| `messages` | `id`, `consultationId`, `authorId`, `authorRole` (`PATIENT` or `DOCTOR`), `content`, `sentAt` |
 
-consultationId → for fast message lookups
+**Indexes.** The `messages` collection has compound indexes on `(consultationId, sentAt)` and `(consultationId, authorRole, sentAt)`. These match the two queries the API runs: all messages in time order, and messages by role in time order.
 
-sentAt → for sorting messages chronologically
+**Separate request DTO.** `CreateMessageRequest` carries the validation rules, so the API never binds request bodies directly to the stored entity.
 
-## **Technology Stack**
+**Embedded MongoDB.** This keeps setup to one command for reviewers. In production it would be replaced by a managed MongoDB instance.
 
-| Layer      | Technology                    | Purpose                                                  |
-|-------------|-------------------------------|----------------------------------------------------------|
-| Backend     | Spring Boot 3                 | REST API framework                                       |
-| Database    | MongoDB Embedded (Flapdoodle) | Local, in-memory persistence                             |
-| Frontend    | HTML + JavaScript             | Basic UI for sending and viewing messages                |
-| Data Seeder | CommandLineRunner             | Loads demo consultations and messages automatically      |
+---
 
-
-## **Making This Production-Ready**
-
-| Category     | Improvement                                      | Benefit                                     |
-|---------------|--------------------------------------------------|---------------------------------------------|
-| Security      | Add JWT authentication, HTTPS, and validation    | Protects sensitive patient data             |
-| Performance   | Add pagination for messages                      | Handles large chat histories                |
-| Reliability   | Use external MongoDB replica set                 | Prevents data loss on restart               |
-| Scalability   | Dockerize + load balance API                     | Supports many concurrent sessions           |
-| Data Integrity| Add schema validation and error logging          | Ensures consistent records                  |
-| Compliance    | Implement HIPAA/PIPEDA encryption                | Meets healthcare data privacy laws          |
-
-
-## **UI Usage**
-
-1. Start the app using mvn spring-boot:run
-2. Open src/main/resources/static/index.html
-3. Choose a consultation (CONS-1 or CONS-2) from the dropdown
-4. Click Load to view messages
-5. Type a message and click Send
-
-Messages appear instantly without reloading the page.
-
-## **Project Structure**
+## Project structure
 
 ```text
-telemed-messages/
-│
-├── src/main/java/com/praxes/telemed_messages/
-│   ├── controller/
-│   ├── domain/
-│   ├── repo/
-│   ├── seed/
-│   └── TelemedMessagesApplication.java
-│
-├── src/main/resources/
-│   ├── application.yml
-│   └── static/index.html
-│
-└── pom.xml
+src/main/java/com/praxes/telemed_messages/
+├── api/        # REST controllers, request DTO, global exception handler
+├── domain/     # Consultation, Message, AuthorRole
+├── repo/       # Spring Data MongoDB repositories
+├── seed/       # Demo data loaded at startup
+└── TelemedMessagesApplication.java
+src/main/resources/
+├── application.yml
+└── static/index.html   # Web UI
 ```
-**Summary**
 
-This project fulfills all technical and documentation criteria:
-* RESTful API endpoints with curl examples
-* Embedded MongoDB with automatic data seeding
-* Simple web UI for testing
-* Well-documented architecture and production plan
-* Sample data covering both consultations and messages
+---
+
+## Testing
+
+```bash
+./mvnw test
+```
+
+Currently this includes a Spring context-load test only.
+
+---
+
+## Next steps for production
+
+| Area | Improvement |
+|---|---|
+| Security | Authentication (for example JWT), with checks that only the consultation's patient and doctor can read or send messages; HTTPS |
+| Privacy | Encrypt message content at rest, to support PIPEDA/HIPAA requirements |
+| Scale | Pagination for long conversations; external MongoDB replica set |
+| Quality | Controller and repository tests (MockMvc, Testcontainers) |
+| Real-time | WebSocket push instead of manual reload |
