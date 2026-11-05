@@ -4,6 +4,8 @@ A REST API for text messaging between patients and doctors inside telemedicine c
 
 Built by Kriti Jodhani (October 2025) as a developer technical assessment.
 
+Front end: [Telemed Messages – Angular UI](https://github.com/Kriti0301/telemed-angular-ui), an Angular app that consumes this API.
+
 ---
 
 ## Features
